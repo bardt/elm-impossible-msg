@@ -16,6 +16,7 @@ type alias Model =
     { key : Browser.Navigation.Key
     , form : Form
     , url : Url.Url
+    , inputLength : Int
     }
 
 
@@ -27,12 +28,11 @@ type Msg
 
 
 type FirstFormMsg
-    = Blur
-    | Input String
+    = FirstFormChange { firstInput : String }
 
 
 type SecondFormMsg
-    = Noop
+    = SecondFormChange { secondInput : String }
 
 
 init : Url.Url -> Browser.Navigation.Key -> ( Model, Cmd Msg )
@@ -40,6 +40,7 @@ init url key =
     ( { key = key
       , form = First
       , url = url
+      , inputLength = 0
       }
     , Cmd.none
     )
@@ -64,16 +65,19 @@ update msg model =
                     , Browser.Navigation.load urlString
                     )
 
-        FirstForm Blur ->
-            ( model, Cmd.none )
+        FirstForm (FirstFormChange { firstInput }) ->
+            {- This simulates a real life scenario when authentication expires
+               and you redirect to login
+            -}
+            ( { model | inputLength = String.length firstInput }, Browser.Navigation.pushUrl model.key (Url.toString model.url) )
 
-        FirstForm (Input string) ->
-            -- This simulates a real life scenario when authentication expires
-            -- and you redirect to login
-            ( model, Browser.Navigation.pushUrl model.key (Url.toString model.url) )
-
-        SecondForm Noop ->
-            ( model, Cmd.none )
+        SecondForm (SecondFormChange { secondInput }) ->
+            {- `String.length` call is required to demonstrate how runtime
+               exception can occure. At this point we receive
+               `SecondForm (FormChange { firstInput = "" })`, but trying to
+               use `secondInput` field.
+            -}
+            ( { model | inputLength = String.length secondInput }, Cmd.none )
 
 
 view : Model -> Browser.Document Msg
@@ -82,30 +86,30 @@ view model =
     , body =
         [ case model.form of
             First ->
-                formView model
+                firstFormView model
                     |> Html.map FirstForm
 
             Second ->
-                anotherFormView model
+                secondFormView model
                     |> Html.map SecondForm
         ]
     }
 
 
-formView : Model -> Html FirstFormMsg
-formView model =
+firstFormView : Model -> Html FirstFormMsg
+firstFormView model =
     div []
         [ h1 [] [ text "First form" ]
         , input
-            [ Html.Events.onBlur Blur
-            , Html.Events.onInput Input
+            [ Html.Events.onBlur (FirstFormChange { firstInput = "" })
+            , Html.Events.onInput (\input -> FirstFormChange { firstInput = input })
             ]
             []
         ]
 
 
-anotherFormView : Model -> Html msg
-anotherFormView model =
+secondFormView : Model -> Html SecondFormMsg
+secondFormView model =
     div []
         [ h1 [] [ text "Second form" ]
         , button [] [ text "Button" ]
