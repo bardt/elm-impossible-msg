@@ -14,3 +14,8 @@ be further clarified).
 6. You will be immediately switched to the second form
 7. Inspect the output of Console. You will notice that after UrlChange msg goes
 `SecondForm Blur`, which is not possible from the types defined in Main.elm
+
+I managed to reproduce this bug using combination of
+`Browser.Navigation.pushUrl`,
+`Html.Events.onBlur` and `Html.map`. In real world usage this behaviour can
+cause runtime exception.
